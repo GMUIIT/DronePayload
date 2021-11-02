@@ -3,13 +3,13 @@ import cv2
 import numpy as np
 
 # Read image
-src = cv2.imread("assets/test3.jpeg", 0);
+src = cv2.imread(r"C:\Users\alkar\Documents\GitHub\IITPayload\data/test3.jpeg", 0);
 
 
 # Thresholding using THRESH_TOZERO
 th, dst = cv2.threshold(src,50,255, cv2.THRESH_BINARY)
-cv2.imwrite("assets/opencv-thresh-tozero.jpg", dst)
-image = cv2.imread("assets/opencv-thresh-tozero.jpg")
+cv2.imwrite("images/opencv-thresh-tozero.jpg", dst)
+image = cv2.imread("images/opencv-thresh-tozero.jpg")
 
 blue, green, red = cv2.split(image)
 

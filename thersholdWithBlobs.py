@@ -3,7 +3,8 @@ import cv2
 import numpy as np
 
 # Read image
-src = cv2.imread("test3.jpeg",1);
+src = cv2.imread("data/test3.jpeg",0)
+
 
 
 # Thresholding using THRESH_TOZERO
@@ -18,11 +19,11 @@ print(params)
 
 # Change thresholds
 params.minThreshold = 0
-params.maxThreshold = 300
+params.maxThreshold = 1000
 
 # Filter by Area.
 params.filterByArea = True
-params.minArea = 1
+params.minArea = 150
 
 # Filter by Circularity
 params.filterByCircularity = False
@@ -46,12 +47,14 @@ else:
 # Detect blobs.
 keypoints = detector.detect(im)
 
+print(im)
+print(keypoints)
+
 # Draw detected blobs as red circles.
 # cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS ensures
 # the size of the circle corresponds to the size of blob
 
-im_with_keypoints = cv2.drawKeypoints(im, keypoints, np.array([]), (0, 0, 255),
-                                      cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+im_with_keypoints = cv2.drawKeypoints(im, keypoints, np.array([]), (0, 0, 255),cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
 
 # Show blobs
 cv2.imshow("Keypoints", im_with_keypoints)
