@@ -3,6 +3,7 @@
 	# Write output to log file/serial device every certain number of frames
 	# instead of every frame (too much output).
 # Notes:
+	# Currently (11/20/21) ready for startup on boot: CTRL+C works.
 	# Please use tabs instead of spaces for white space 
 	# Need to run in the root directory of the repo. (not in any subdirectory) so
 	# log output is properly written.
@@ -16,6 +17,7 @@ from datetime import datetime
 
 cap = cv2.VideoCapture(0)
 
+# Custom signal handler to handle a CTRL+C interrupt
 def sig_hand(sig, frame):
 	print("\nFIRE DETECTION TERMINATED")
 	cap.release()
@@ -69,9 +71,11 @@ while(cap.isOpened()):
 				os.system(f"echo \"{message}\" >> logs/{mon_dy_yr}_fire.log")
 
 
+		"""
 		cv2.imshow('frame', frame)
 		if cv2.waitKey(1) & 0xFF == ord('q'):
 			break
+		"""
 	else:
 		break
 	
