@@ -1,19 +1,27 @@
 # TODO:
 	# Optimize code. Make functions. Streamline
-	# Write to output every certain number of frames instead of per every frame.
-	# Figure out how to automate killing the program without a window.
-# Please use tabs instead of spaces for white space 
-# Need to run in the root directory of the repo. (not in any subdirectory) so
-# log output is properly written
+	# Write output to log file/serial device every certain number of frames
+	# instead of every frame (too much output).
+# Notes:
+	# Please use tabs instead of spaces for white space 
+	# Need to run in the root directory of the repo. (not in any subdirectory) so
+	# log output is properly written.
 import numpy as np
 import cv2
 import serial 
-import os
+import os, signal
 from datetime import datetime
 
 #cap = cv2.VideoCapture(r'C:\Users\alkar\Documents\GitHub\IITPayload\data\videotest2.avi')
 
 cap = cv2.VideoCapture(0)
+
+def sig_hand(sig, frame):
+	print("\nFIRE DETECTION TERMINATED")
+	cap.release()
+	cv2.destroyAllWindows()
+
+signal.signal(signal.SIGINT, sig_hand)
 
 while(cap.isOpened()):
 	# Capture frame-by-frame
@@ -61,7 +69,6 @@ while(cap.isOpened()):
 				os.system(f"echo \"{message}\" >> logs/{mon_dy_yr}_fire.log")
 
 
-
 		cv2.imshow('frame', frame)
 		if cv2.waitKey(1) & 0xFF == ord('q'):
 			break
@@ -75,3 +82,5 @@ try:
 	ser.close()
 except:
 	pass
+
+
