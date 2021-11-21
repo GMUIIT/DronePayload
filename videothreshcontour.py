@@ -13,11 +13,10 @@ import serial
 import os, signal
 from datetime import datetime
 
-#cap = cv2.VideoCapture(r'C:\Users\alkar\Documents\GitHub\IITPayload\data\videotest2.avi')
-
 cap = cv2.VideoCapture(0)
 
-# Custom signal handler to handle a CTRL+C interrupt
+# Custom signal handler to handle a CTRL+C interrupt so that video capture and
+# serial device are closed.
 def sig_hand(sig, frame):
 	print("\nFIRE DETECTION TERMINATED")
 	cap.release()
@@ -41,7 +40,7 @@ while(cap.isOpened()):
 		# cv2.THRESH_BINARY -> if src(x,y) > thresh, set to maxval, else 0 (black)
 		ret, thresh_img = cv2.threshold(blur, 210, 255, cv2.THRESH_BINARY)
 
-		# Finds edges in the threshed img 
+		# Finds edges in the threshed image 
 		# src img
 		# cv2.RETR_TREE -> retrieval mode that finds contours within contours
 		# cv2.CHAIN_APPROX_SIMPLE -> compresses horizontal, vertical, and diagonal 
@@ -61,6 +60,7 @@ while(cap.isOpened()):
 			if fire_detected == 1:
 				# Write the byte string (1s and 0s) to the serial device
 				ser.write(message.encode('utf8'))
+			ser.close()
 		except:
 			message = f"Fire detected at {dt_string}. \n"
 			mon_dy_yr = now.strftime("%m-%d-%Y")
@@ -79,12 +79,5 @@ while(cap.isOpened()):
 	else:
 		break
 	
-
 cap.release()
 cv2.destroyAllWindows()
-try:
-	ser.close()
-except:
-	pass
-
-
