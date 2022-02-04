@@ -33,7 +33,7 @@ def main():
             for h in range(24):
                 for w in range(32):
                     t = frame[h * 32 + w]
-                    mat[h,w] = (t - low) / (high - low)
+                    mat[h,w] = (t - low) / (high - low) * 255
 
             res, enc = cv2.imencode('.jpg', mat)
             enc = base64.b85encode(enc.tobytes())  # ready to be sent via XBee
