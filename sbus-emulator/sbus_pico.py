@@ -1,14 +1,17 @@
 # Micropython script
 import machine
+import micropython
 from machine import UART, Pin
 import time
 
 
 # SBUS uses an inverted serial port
-ser = UART(0, baudrate=100000, tx=Pin(0), rx=Pin(1), invert=UART.INV_TX | UART.INV_RX)
+ser = UART(0, baudrate=100000, tx=Pin(0), rx=Pin(1), invert=UART.INV_TX | UART.INV_RX, parity=0, stop=2)
+channels = [0] * 16
+n = 0
 
-
-def write_sbus_frame(ser, channels: list[int]) -> None:
+def write_sbus_frame(_=None):
+    global channels, n
     """
     Write a SBUS frame to the serial port.
     """
@@ -22,7 +25,7 @@ def write_sbus_frame(ser, channels: list[int]) -> None:
     #   bit 4: failsafe activated
     #   bit 3-0: unused
     # 24: end byte, 0x00
-
+    n += 1
     ser.write(b'\x0F')
     channels_int = 0
     for i, channel in enumerate(channels):
@@ -34,20 +37,28 @@ def write_sbus_frame(ser, channels: list[int]) -> None:
 
 
 def main():
+    global channels
+    timer = machine.Timer(period=9, mode=machine.Timer.PERIODIC, callback=lambda x: micropython.schedule(write_sbus_frame, 0))
+
     while True:
         # read input from stdin
         line = input()
         # split input into channels
         try:
-            channels = [int(x.strip()) for x in line.strip().split(' ')]
-        except ValueError:
-            print("Error parsing input")
+            inputs = [int(x.strip()) for x in line.strip().split(',')]
+        except ValueError as e:
+            print("Error parsing input", e)
             continue
-        if len(channels) != 16:
-            print("Invalid number of channels")
+        if len(inputs) >= 16:
+            print("Too many channels")
             continue
+        elif len(inputs) < 16:
+            inputs += [0] * (16 - len(inputs))
+        # set channels
+        channels = inputs
         # write frame
-        write_sbus_frame(ser, channels)
+        write_sbus_frame()
+        print(n, "frames sent")
 
 
 if __name__ == '__main__':

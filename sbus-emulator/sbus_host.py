@@ -34,7 +34,9 @@ def main():
         # Process events
         if pygame.event.get():
             # Send data to the serial port
-            channel_outputs = [0] * 16
+            # channel_outputs = [0] * 16
+            # This is illegal but it's fine as a hack rn
+            channel_outputs = [0] * 4
             for channel in SBUS_CHANNELS:
                 axis = joystick.get_axis(channel['joystick_axis'])
                 if 'dead_zone' in channel and abs(axis) < channel['dead_zone']:
@@ -51,7 +53,7 @@ def main():
                 print("Sent")
             if args.debug and ser.in_waiting > 0:
                 print("Received: {}".format(ser.read(ser.in_waiting).decode()))
-        time.sleep(0.033)
+        time.sleep(0.003)
 
     pygame.quit()
 
