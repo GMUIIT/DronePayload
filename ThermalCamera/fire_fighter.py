@@ -51,6 +51,7 @@ def init_thermal():
         i2c = busio.I2C(board.SCL, board.SDA, frequency=800000)
         mlx = adafruit_mlx90640.MLX90640(i2c)
         mlx.refresh_rate = adafruit_mlx90640.RefreshRate.REFRESH_4_HZ
+        return mlx
     except:
         sys.exit("Thermal camera initialization failed.")
 
