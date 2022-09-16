@@ -4,13 +4,16 @@ import board
 import busio
 import serial
 import sys
+import time
+import RPi.GPIO as GPIO
+import io
 
 #--------------------------------------------------------------------------------------------------------------------------------#
 #--------------------------------------------------------------------------------------------------------------------------------#
 #--------------------------------------------------------------------------------------------------------------------------------#
 #--------------------------------------------------------------------------------------------------------------------------------#
 
-FIRE_TEMPERATURE_THRESHOLD = 50
+FIRE_TEMPERATURE_THRESHOLD = 36
 FIRE_PIXELS_THRESHOLD = 10
 
 #--------------------------------------------------------------------------------------------------------------------------------#
@@ -25,15 +28,19 @@ def init_gps():
         # a slightly higher timeout (GPS modules typically update once a second).
         # These are the defaults you should use for the GPS FeatherWing.
         # For other boards set RX = GPS module TX, and TX = GPS module RX pins.
-        uart = serial.Serial(port="/dev/ttyAMA1", baudrate=9600, timeout=10)
+        print("opening serial")
+        uart = serial.Serial(port="/dev/serial0", baudrate=9600, timeout=10)
 
         # Create a GPS module instance.
+        print("creating instance")
         gps = adafruit_gps.GPS(uart, debug=False)
 
         # Turn on the basic GGA and RMC info (what you typically want)
+        print("settin default")
         gps.send_command(b"PMTK314,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0")
 
         # Set update rate to once a second (1hz) which is what you typically want.
+        print("set update rate")
         gps.send_command(b"PMTK220,1000")
 
         return gps
@@ -73,12 +80,23 @@ def frame_has_fire(frame):
 
 # Serial setup
 def init_serial():
-    pass
+    ser = serial.Serial(
+        port='/dev/ttyAMA2',
+        baudrate = 9600,
+        parity=serial.PARITY_NONE,
+        stopbits=serial.STOPBITS_ONE,
+        bytesize=serial.EIGHTBITS,
+        timeout=1            
+    )
+    return ser
 
 # Prints to the transmitter
-def sprint(*args, **kwargs):
+def sprint(ser, *args, **kwargs):
     # temporary print function
     print(*args, **kwargs)
+    # sio = io.StringIO()
+    # print(*args, **kwargs, file=sio)
+    # ser.write(str.encode(sio.getvalue()))
 
 #--------------------------------------------------------------------------------------------------------------------------------#
 #--------------------------------------------------------------------------------------------------------------------------------#
@@ -86,13 +104,14 @@ def sprint(*args, **kwargs):
 #--------------------------------------------------------------------------------------------------------------------------------#
 
 def main():
+    print("program started!")
     gps = init_gps()
     mlx = init_thermal()
-
+    ser = init_serial()
     frame = [0] * 768
 
     while True: 
-        sprint("ping")
+        sprint(ser, "ping")
 
         gps.update()
 
@@ -107,11 +126,11 @@ def main():
 
         # If there is a fire, report it even if there is no GPS fix
         if fire:
-            sprint("Fire detected!")
+            sprint(ser, "Fire detected!")
             if fix:
-                sprint("GPS fix: ", gps.latitude, gps.longitude)
+                sprint(ser, "GPS fix: ", gps.latitude, gps.longitude)
             else:
-                sprint("No GPS fix.")
+                sprint(ser, "No GPS fix.")
 
 
 
