@@ -13,7 +13,7 @@ import io
 #--------------------------------------------------------------------------------------------------------------------------------#
 #--------------------------------------------------------------------------------------------------------------------------------#
 
-FIRE_TEMPERATURE_THRESHOLD = 36
+FIRE_TEMPERATURE_THRESHOLD = 300
 FIRE_PIXELS_THRESHOLD = 10
 
 #--------------------------------------------------------------------------------------------------------------------------------#
@@ -32,15 +32,15 @@ def init_gps():
         uart = serial.Serial(port="/dev/serial0", baudrate=9600, timeout=10)
 
         # Create a GPS module instance.
-        print("creating instance")
+        print("Creating GPS instance")
         gps = adafruit_gps.GPS(uart, debug=False)
 
         # Turn on the basic GGA and RMC info (what you typically want)
-        print("settin default")
+        print("Setting default")
         gps.send_command(b"PMTK314,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0")
 
         # Set update rate to once a second (1hz) which is what you typically want.
-        print("set update rate")
+        print("Set update rate")
         gps.send_command(b"PMTK220,1000")
 
         return gps
@@ -55,9 +55,11 @@ def init_gps():
 # Thermal Camera Setup
 def init_thermal():
     try:
+        print("starting camera initialization...")
         i2c = busio.I2C(board.SCL, board.SDA, frequency=800000)
         mlx = adafruit_mlx90640.MLX90640(i2c)
         mlx.refresh_rate = adafruit_mlx90640.RefreshRate.REFRESH_4_HZ
+        print("Thermal camera set up successfully!");
         return mlx
     except:
         sys.exit("Thermal camera initialization failed.")
@@ -94,9 +96,9 @@ def init_serial():
 def sprint(ser, *args, **kwargs):
     # temporary print function
     print(*args, **kwargs)
-    # sio = io.StringIO()
-    # print(*args, **kwargs, file=sio)
-    # ser.write(str.encode(sio.getvalue()))
+    sio = io.StringIO()
+    print(*args, **kwargs, file=sio)
+    ser.write(str.encode(sio.getvalue()))
 
 #--------------------------------------------------------------------------------------------------------------------------------#
 #--------------------------------------------------------------------------------------------------------------------------------#
@@ -111,7 +113,7 @@ def main():
     frame = [0] * 768
 
     while True: 
-        sprint(ser, "ping")
+        #sprint(ser, "ping")
 
         gps.update()
 
