@@ -1,5 +1,5 @@
 import cv2
-import serial
+import socket
 import numpy as np
 import argparse
 import base64
@@ -7,23 +7,26 @@ import base64
 
 def main():
     parser = argparse.ArgumentParser(description='Thermal Camera Client')
-    parser.add_argument('--port', type=str, default='/dev/ttyUSB0',
-                        help='serial port to connect to')
-    parser.add_argument('--baud', type=int, default=115200,
-                        help='baud rate to connect to')
+    parser.add_argument('ip_address', type=str,
+            help='ip address to connect to')
+    parser.add_argument('--port', type=int, default=1729,
+            help='socket port to connect to')
     args = parser.parse_args()
+    
+    client = socket.create_connection((args.ip_address, args.port))
 
-
-    with serial.Serial(args.port, args.baud) as ser:
-        # Throw out the first line
-        ser.readline()
+    with client:
         while True:
-            line = ser.readline()[:-1]
+            line = b''
+            while not line.endswith(b'\n'):
+                line += client.recv(1)
+            line = line[:-1]
+
             try:
                 line = base64.b85decode(line)
                 img = cv2.imdecode(np.frombuffer(line, dtype=np.uint8), cv2.IMREAD_COLOR)
             except ValueError:
-                print('Invalid image received')
+                print(f'Invalid image received: {line}')
                 continue
 
             if img is None:

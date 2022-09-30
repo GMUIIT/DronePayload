@@ -1,11 +1,17 @@
+#!/usr/bin/env python3
 import adafruit_gps
 import adafruit_mlx90640
 import board
+import base64
 import busio
 import serial
+import socketserver
+import threading
+import cv2
 import sys
 import time
 import RPi.GPIO as GPIO
+import numpy as np
 import io
 
 #--------------------------------------------------------------------------------------------------------------------------------#
@@ -105,18 +111,55 @@ def sprint(ser, *args, **kwargs):
 #--------------------------------------------------------------------------------------------------------------------------------#
 #--------------------------------------------------------------------------------------------------------------------------------#
 
+def encode_frame(frame):
+    # Encode frame as a jpg for efficient sending.
+    mat = np.zeros((24, 32), dtype=np.float32)
+    low, high = min(frame), max(frame)
+    for h in range(24):
+        for w in range(32):
+            t = frame[h * 32 + w]
+            mat[h,w] = (t - low) / (high - low) * 255
+
+    res, enc = cv2.imencode('.jpg', mat)
+    enc = base64.b85encode(enc.tobytes())  # ready to be sent via a text-safe channel
+    return enc
+
+# ----------------
+class FrameHandler(socketserver.BaseRequestHandler):
+    def handle(self):
+        global current_frame, frame_event
+        while True:
+            frame_event.wait()
+            self.request.sendall(encode_frame(current_frame))
+            self.request.sendall(b'\n')
+
+class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+    pass
+
+
+current_frame = None
+frame_event = threading.Event()
+
+
 def main():
+    global current_frame, frame_event
     print("program started!")
     gps = init_gps()
     mlx = init_thermal()
     ser = init_serial()
     frame = [0] * 768
 
+    # Start server dispatch thread
+    server = ThreadedTCPServer(('0.0.0.0', 1729), FrameHandler)
+    # server = socketserver.ThreadingUDPServer(('0.0.0.0', 1729), FrameHandler)
+    dispatch_thread = threading.Thread(target=server.serve_forever)
+    dispatch_thread.daemon = True
+    dispatch_thread.start()
+    print(f"Daemon: {dispatch_thread.name}")
+
     while True: 
-        #sprint(ser, "ping")
-
+        sprint(ser, "ping")
         gps.update()
-
         try:
             mlx.getFrame(frame)
         except ValueError:
@@ -125,6 +168,9 @@ def main():
 
         fix = gps.has_fix
         fire = frame_has_fire(frame)
+        # Send thermal camera frame via network
+        current_frame = frame
+        frame_event.set()
 
         # If there is a fire, report it even if there is no GPS fix
         if fire:
