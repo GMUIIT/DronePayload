@@ -89,7 +89,7 @@ def frame_has_fire(frame):
 # Serial setup
 def init_serial():
     ser = serial.Serial(
-        port='/dev/ttyAMA2',
+        port='/dev/ttyAMA3',
         baudrate = 9600,
         parity=serial.PARITY_NONE,
         stopbits=serial.STOPBITS_ONE,
@@ -128,14 +128,12 @@ def encode_frame(frame):
 class FrameHandler(socketserver.BaseRequestHandler):
     def handle(self):
         global current_frame, frame_event
-        while True:
-            frame_event.wait()
-            self.request.sendall(encode_frame(current_frame))
-            self.request.sendall(b'\n')
-
-class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
-    pass
-
+        socket = self.request[1]
+        frame_event.wait()
+        # self.request.sendall(encode_frame(current_frame))
+        # self.request.sendall(b'\n')
+        print("sending")
+        socket.sendto(encode_frame(current_frame) + b'\n', self.client_address)
 
 current_frame = None
 frame_event = threading.Event()
@@ -150,7 +148,7 @@ def main():
     frame = [0] * 768
 
     # Start server dispatch thread
-    server = ThreadedTCPServer(('0.0.0.0', 1729), FrameHandler)
+    server = socketserver.ThreadingUDPServer(('0.0.0.0', 1729), FrameHandler)
     # server = socketserver.ThreadingUDPServer(('0.0.0.0', 1729), FrameHandler)
     dispatch_thread = threading.Thread(target=server.serve_forever)
     dispatch_thread.daemon = True
