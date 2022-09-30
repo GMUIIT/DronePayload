@@ -19,7 +19,7 @@ import io
 #--------------------------------------------------------------------------------------------------------------------------------#
 #--------------------------------------------------------------------------------------------------------------------------------#
 
-FIRE_TEMPERATURE_THRESHOLD = 300
+FIRE_TEMPERATURE_THRESHOLD = 100
 FIRE_PIXELS_THRESHOLD = 10
 
 #--------------------------------------------------------------------------------------------------------------------------------#
@@ -111,14 +111,26 @@ def sprint(ser, *args, **kwargs):
 #--------------------------------------------------------------------------------------------------------------------------------#
 #--------------------------------------------------------------------------------------------------------------------------------#
 
+i = 0
+
 def encode_frame(frame):
+    global i
     # Encode frame as a jpg for efficient sending.
     mat = np.zeros((24, 32), dtype=np.float32)
     low, high = min(frame), max(frame)
+
+    on_fire = frame_has_fire(frame)
+    if on_fire:
+        print("tooooooo hot")
+        i = (i + 1) % 2
+
     for h in range(24):
         for w in range(32):
-            t = frame[h * 32 + w]
-            mat[h,w] = (t - low) / (high - low) * 255
+            if on_fire and i:
+                mat[h,w] = 255
+            else:
+                t = frame[h * 32 + w]
+                mat[h,w] = (t - low) / (high - low) * 255
 
     res, enc = cv2.imencode('.jpg', mat)
     enc = base64.b85encode(enc.tobytes())  # ready to be sent via a text-safe channel
@@ -130,8 +142,6 @@ class FrameHandler(socketserver.BaseRequestHandler):
         global current_frame, frame_event
         socket = self.request[1]
         frame_event.wait()
-        # self.request.sendall(encode_frame(current_frame))
-        # self.request.sendall(b'\n')
         print("sending")
         socket.sendto(encode_frame(current_frame) + b'\n', self.client_address)
 
